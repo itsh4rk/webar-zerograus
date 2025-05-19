@@ -1,22 +1,33 @@
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/ar.js/1.7.2/aframe/build/aframe-ar.min.js"></script>
     <style>
-      body, html { margin: 0; overflow: hidden; }
+      body, html {
+        margin: 0; 
+        overflow: hidden; 
+        height: 100%;
+        width: 100%;
+      }
+      a-scene {
+        width: 100vw;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+      }
     </style>
   </head>
   <body>
-    <a-scene embedded arjs>
-      
-      <!-- Substitui o mindar-image-target -->
+    <a-scene embedded arjs="debugUIEnabled: false;">
       <a-marker type="pattern" url="assets/pattern-imagem.patt">
-        <!-- Mostra uma caixa azul quando reconhece a imagem -->
         <a-box position="0 0.5 0" material="color: blue;"></a-box>
       </a-marker>
 
-      <a-entity camera></a-entity>
+      <!-- Pode remover a câmera customizada, arjs injeta automaticamente -->
+      <!-- <a-entity camera></a-entity> -->
     </a-scene>
   </body>
 </html>
+
