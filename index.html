@@ -13,24 +13,18 @@
       device-orientation-permission-ui="enabled: false"
     >
       <a-assets>
-        <img id="card" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
-        <a-asset-item id="avatarModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/softmind/scene.gltf"></a-asset-item>
+        <!-- Substitua o caminho abaixo pela sua logo, se quiser exibir ela no plano -->
+        <img id="logoZeroGraus" src="https://scontent.fopo6-1.fna.fbcdn.net/v/t39.30808-1/303361433_526098842848723_8331808296202574233_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=107&ccb=1-7&_nc_sid=2d3e12&_nc_ohc=YAIMQ4X5gHwQ7kNvwFz2KrB&_nc_oc=AdnLEG61OZHpNbcGweFngfkSsL0DV7CceNehnRrPPUtPHRN--NXtjSJk-OQWRtkqIus7jXTn9dSXgzM5fTZU0T9D&_nc_zt=24&_nc_ht=scontent.fopo6-1.fna&_nc_gid=b-xbe3tfOuWpqqts605rRw&oh=00_AfIEQumdLCq_xJlV1ezM65R6p8MzZllJ9wvZJRFri1oQpg&oe=68311621" />
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Tudo aparece ao detectar a logo da Zero Graus -->
+      <!-- Este conteúdo será exibido ao detectar a imagem-alvo -->
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane src="#card" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+        <!-- Mostra a imagem-alvo em um plano -->
+        <a-plane src="#logoZeroGraus" position="0 0 0" height="0.552" width="1"></a-plane>
 
-        <a-gltf-model
-          rotation="0 0 0"
-          position="0 0 0.1"
-          scale="0.005 0.005 0.005"
-          src="#avatarModel"
-          animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
-        </a-gltf-model>
-
+        <!-- Adiciona elementos visuais -->
         <a-box color="blue" position="-0.5 0.25 0" depth="0.3" height="0.3" width="0.3"></a-box>
         <a-sphere color="red" position="0.5 0.25 0" radius="0.2"></a-sphere>
       </a-entity>
