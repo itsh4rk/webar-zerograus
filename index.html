@@ -1,44 +1,119 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      #caixaFixa {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        height: 300px;
+        padding: 20px;
+        background-color: #006600;
+        color: white;
+        border-radius: 8px;
+        display: none;
+        z-index: 998;
+        text-align: center;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #caixaFixa img {
+        width: 60px;
+        margin-bottom: 10px;
+      }
+
+      #caixaFixa video {
+        width: 100%;
+        height: auto;
+        margin-top: 10px;
+      }
+
+      #botaoHtml {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #00cc00;
+        border: none;
+        border-radius: 5px;
+        display: none;
+        cursor: pointer;
+        z-index: 999;
+      }
+    </style>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>
   <body>
+
+    <!-- Caixa HTML fixa -->
+    <div id="caixaFixa">
+      <img id="imagemFlor" src="./assets/flor.png" alt="Flor" />
+      <video 
+        id="videoHtml" 
+        src="./assets/video.mp4" 
+        loop 
+        muted 
+        playsinline 
+        webkit-playsinline 
+        crossorigin="anonymous">
+      </video>
+    </div>
+
+    <!-- Botão HTML -->
+    <button id="botaoHtml">Abrir site</button>
+
+    <!-- Cena AR -->
     <a-scene
-      mindar-image="imageTargetSrc: ./assets/targets.mind;"
+      mindar-image="imageTargetSrc: ./assets/targets1.mind;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
+      embedded
     >
-    <a-assets>
-  <a-asset-item id="meuModelo" src="./assets/seu-modelo.glb"></a-asset-item>
-</a-assets>
+      <a-assets>
+        <!-- Não usamos mais o vídeo nem imagem aqui -->
+      </a-assets>
 
-<a-entity mindar-image-target="targetIndex: 0" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
-  <a-gltf-model 
-    src="#meuModelo" 
-    position="0 0 0" 
-    scale="0.2 0.2 0.2">
-  </a-gltf-model>
-</a-entity>
-
-<a-light type="ambient" color="#ffffff" intensity="0.8"></a-light>
-<a-light type="directional" color="#ffffff" intensity="0.5" position="0 1 1"></a-light>
-
+      <a-entity id="target" mindar-image-target="targetIndex: 0"></a-entity>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <a-entity mindar-image-target="targetIndex: 1">
-        <a-box color="blue" position="0 0.25 0" depth="0.3" height="0.3" width="0.3"></a-box>
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 2">
-        <a-sphere color="red" position="0 0.25 0" radius="0.2"></a-sphere>
-      </a-entity>
     </a-scene>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const caixaFixa = document.getElementById("caixaFixa");
+        const botaoHtml = document.getElementById("botaoHtml");
+        const videoHtml = document.getElementById("videoHtml");
+        const target = document.querySelector("#target");
+
+        target.addEventListener("targetFound", () => {
+          caixaFixa.style.display = "flex";
+          botaoHtml.style.display = "block";
+          videoHtml.play().catch((e) => {
+            console.warn("Erro ao iniciar vídeo:", e);
+          });
+        });
+
+        target.addEventListener("targetLost", () => {
+          caixaFixa.style.display = "none";
+          botaoHtml.style.display = "none";
+          videoHtml.pause();
+          videoHtml.currentTime = 0;
+        });
+
+        botaoHtml.addEventListener("click", () => {
+          window.open("https://moncorvosoto.pt", "_blank");
+        });
+      });
+    </script>
   </body>
 </html>
-
 
