@@ -16,11 +16,11 @@
   <a-asset-item id="meuModelo" src="./assets/seu-modelo.glb"></a-asset-item>
 </a-assets>
 
-<a-entity mindar-image-target="targetIndex: 0">
+<a-entity mindar-image-target="targetIndex: 0" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
   <a-gltf-model 
     src="#meuModelo" 
     position="0 0 0" 
-    scale="0.1 0.1 0.1">
+    scale="1 1 1">
   </a-gltf-model>
 </a-entity>
 
