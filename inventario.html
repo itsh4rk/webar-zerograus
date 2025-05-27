@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventário AR</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #ecf0f1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 1rem;
+    }
+
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 1rem;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 2rem;
+    }
+
+    .item {
+      background: white;
+      border: 2px dashed #bdc3c7;
+      border-radius: 12px;
+      height: 120px; /* Ajuste a altura para caber mais informações */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: #7f8c8d;
+      flex-direction: column;
+      text-align: center;
+      word-wrap: break-word;
+      padding: 5px;
+      box-sizing: border-box; /* Garante que o padding não aumente o tamanho total */
+    }
+
+    .item img {
+      max-width: 60px;
+      max-height: 60px;
+      object-fit: contain;
+      margin-bottom: 5px;
+    }
+
+    .item span {
+        font-weight: bold;
+        color: #34495e;
+        margin-bottom: 2px;
+    }
+
+    .item small {
+        font-size: 0.75rem;
+        color: #95a5a6;
+    }
+
+    button {
+      padding: 0.75rem 2rem;
+      font-size: 1rem;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    #logoutBtn {
+        background-color: #e74c3c;
+        margin-top: 1rem;
+    }
+
+    #logoutBtn:hover {
+        background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <h1>Inventário</h1>
+  <div class="inventory-grid" id="inventory">
+    </div>
+  <button onclick="goToAR()">Capturar Item</button>
+  <button id="logoutBtn">Sair</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Sua configuração Firebase (verifique se está correta)
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8r-bd57AfWKrL6LSzkAgELGB_pl45eC4",
+      authDomain: "ar-zerograus.firebaseapp.com",
+      projectId: "ar-zerograus",
+      storageBucket: "ar-zerograus.appspot.com",
+      messagingSenderId: "708966843494",
+      appId: "1:708966843494:web:d0f539435f1c8d7a84d9a7",
+      measurementId: "G-VDRPEVPPGL"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const inventoryContainer = document.getElementById('inventory');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    // Redireciona para a página AR
+    window.goToAR = function() {
+      window.location.href = "ar.html";
+    }
+
+    // Função para carregar e exibir o inventário do Firestore
+    function loadInventory(userId) {
+      // Ordena os itens por timestamp (mais recente primeiro)
+      const q = query(
+        collection(db, "inventories"),
+        where("userId", "==", userId),
+        orderBy("timestamp", "desc")
+      );
+
+      onSnapshot(q, (snapshot) => {
+        inventoryContainer.innerHTML = ""; // Limpa antes de recarregar
+        if (snapshot.empty) {
+          inventoryContainer.innerHTML = "<p>Seu inventário está vazio. Capture alguns itens!</p>";
+          return;
+        }
+        snapshot.forEach((doc) => {
+          const item = doc.data();
+          const div = document.createElement('div');
+          div.className = 'item';
+
+          // Garante que 'name' e 'imageUrl' existem, ou usa um fallback
+          const itemName = item.name || "Item Desconhecido";
+          const itemImageUrl = item.imageUrl || ""; 
+
+          // --- TRATAMENTO ROBUSTO PARA O TIMESTAMP (visível agora) ---
+          let formattedDate = "Carregando data...";
+          if (item.timestamp && typeof item.timestamp.toDate === 'function') {
+            const date = item.timestamp.toDate();
+            formattedDate = date.toLocaleString('pt-BR', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+          } else if (typeof item.timestamp === 'number') {
+            const date = new Date(item.timestamp);
+            formattedDate = date.toLocaleString('pt-BR', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+          }
+          // --- FIM DO TRATAMENTO ROBUSTO ---
+
+          // O nome do usuário continua sendo lido, mas não será exibido na tela
+          const displayedUserName = item.userName || "Usuário Desconhecido";
+
+
+          // AQUI VOCÊ CONTROLA O QUE É EXIBIDO
+          if (itemImageUrl) { // Se tiver imagem (URL não vazia)
+            div.innerHTML = `
+              <img src="${itemImageUrl}" alt="${itemName}" />
+              <span>${itemName}</span>
+              <small>${formattedDate}</small>
+              `;
+          } else { // Se não tiver imagem (URL vazia ou nula)
+            div.innerHTML = `
+              <span>${itemName}</span>
+              <small>${formattedDate}</small>
+              `;
+          }
+          inventoryContainer.appendChild(div);
+        });
+      }, (error) => {
+        console.error("Erro ao carregar inventário: ", error);
+        inventoryContainer.innerHTML = "<p>Erro ao carregar inventário.</p>";
+      });
+    }
+
+    // Checar o estado da autenticação
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Usuário logado, carregar inventário
+        loadInventory(user.uid);
+      } else {
+        // Usuário não logado, redirecionar para a página de login
+        window.location.href = "index.html";
+      }
+    });
+
+    // Função de Logout
+    logoutBtn.addEventListener('click', () => {
+        signOut(auth).then(() => {
+            window.location.href = "index.html";
+        }).catch((error) => {
+            console.error("Erro ao fazer logout: ", error);
+            alert("Erro ao fazer logout. Tente novamente.");
+        });
+    });
+  </script>
+</body>
+</html>
