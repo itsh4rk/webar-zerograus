@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Conta</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-image: url('./assets/fundo_zero.png'); /* Usando sua imagem de fundo */
+            background-size: cover;
+            background-position: center;
+            color: #333;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.95); /* Fundo branco semi-transparente */
+            padding: 30px;
+            border-radius: 12px; /* Cantos mais arredondados */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Sombra mais pronunciada */
+            width: 350px; /* Largura um pouco maior */
+            text-align: center;
+            max-width: 90%; /* Responsividade básica */
+        }
+        h2 {
+            margin-bottom: 25px; /* Mais espaço abaixo do título */
+            color: #333;
+            font-size: 1.8em; /* Título um pouco maior */
+        }
+        input[type="email"],
+        input[type="password"] {
+            width: calc(100% - 24px); /* Ajuste para padding */
+            padding: 12px;
+            margin-bottom: 18px; /* Mais espaço entre campos */
+            border: 1px solid #ccc;
+            border-radius: 6px; /* Cantos arredondados nos inputs */
+            font-size: 1em;
+            box-sizing: border-box; /* Inclui padding na largura total */
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px; /* Cantos arredondados nos botões */
+            cursor: pointer;
+            font-size: 1.1em; /* Fonte um pouco maior */
+            margin-bottom: 12px; /* Espaço entre botões */
+            transition: background-color 0.3s ease; /* Transição suave no hover */
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .message {
+            margin-top: 20px; /* Mais espaço acima da mensagem */
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #dc3545; /* Vermelho padrão para erro */
+            background-color: #f8d7da; /* Fundo leve para erro */
+            border: 1px solid #f5c6cb;
+            display: none; /* Escondido por padrão */
+        }
+        .message.show {
+            display: block; /* Mostra quando tem mensagem */
+        }
+        .success {
+            color: #28a745; /* Verde para sucesso */
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        #backToLogin {
+            background-color: #6c757d;
+        }
+        #backToLogin:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Criar Nova Conta</h2>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Senha (mínimo 6 caracteres)" required>
+        <button id="registerButton">Registrar</button>
+        <button id="backToLogin">Voltar ao Login</button>
+        <p id="message" class="message"></p>
+    </div>
+
+    <script type="module">
+        // Importações do Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        // Sua configuração do Firebase (a mesma que você tem nos outros arquivos)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8r-bd57AfWKrL6LSzkAgELGB_pl45eC4",
+            authDomain: "ar-zerograus.firebaseapp.com",
+            projectId: "ar-zerograus",
+            storageBucket: "ar-zerograus.appspot.com",
+            messagingSenderId: "708966843494",
+            appId: "1:708966843494:web:d0f539435f1c8d7a84d9a7",
+            measurementId: "G-VDRPEVPPGL"
+        };
+
+        // Inicializa o Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Referências aos elementos HTML
+        const emailInput = document.getElementById("email");
+        const passwordInput = document.getElementById("password");
+        const registerButton = document.getElementById("registerButton");
+        const backToLoginButton = document.getElementById("backToLogin");
+        const messageDisplay = document.getElementById("message");
+
+        // Função para exibir mensagens na tela
+        function showMessage(text, isError = true) {
+            messageDisplay.textContent = text;
+            messageDisplay.className = isError ? "message show" : "message success show";
+        }
+
+        // Event listener para o botão de Registrar
+        registerButton.addEventListener("click", async () => {
+            const email = emailInput.value.trim(); // .trim() remove espaços em branco
+            const password = passwordInput.value.trim();
+
+            // Validação simples no cliente
+            if (!email || !password) {
+                showMessage("Por favor, preencha todos os campos.");
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage("A senha deve ter pelo menos 6 caracteres.");
+                return;
+            }
+
+            try {
+                // Tenta criar o usuário com email e senha no Firebase
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                console.log("Usuário registrado com sucesso:", userCredential.user.uid);
+                showMessage("Conta criada com sucesso! Redirecionando para o inventário...", false);
+                
+                // Redireciona para o inventário após 2 segundos
+                setTimeout(() => {
+                    window.location.href = "inventario.html"; 
+                }, 2000); 
+
+            } catch (error) {
+                // Captura e trata erros do Firebase
+                console.error("Erro ao registrar:", error.code, error.message);
+                let errorMessage = "Ocorreu um erro desconhecido ao criar a conta.";
+                
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = "Este email já está em uso. Tente outro.";
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = "O formato do email é inválido. Por favor, verifique.";
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = "A senha é muito fraca. Use pelo menos 6 caracteres e considere combinar letras, números e símbolos.";
+                        break;
+                    case 'auth/operation-not-allowed':
+                        errorMessage = "Operação de criação de conta não permitida. Verifique suas configurações no Firebase Authentication.";
+                        break;
+                    default:
+                        errorMessage = `Erro: ${error.message}`; // Exibe a mensagem de erro padrão do Firebase
+                        break;
+                }
+                showMessage(errorMessage);
+            }
+        });
+
+        // Event listener para o botão de Voltar ao Login
+        backToLoginButton.addEventListener("click", () => {
+            window.location.href = "index.html";
+        });
+    </script>
+</body>
+</html>
