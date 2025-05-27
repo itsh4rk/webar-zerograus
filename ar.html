@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AR Captura</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: black;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        a-scene {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 0;
+        }
+
+        #caixaMensagem {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            z-index: 10;
+            display: none;
+        }
+
+        #sacoUI {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: auto;
+            z-index: 15;
+            cursor: grab;
+            touch-action: none;
+            transition: transform 0.3s ease;
+            user-select: none;
+            display: none;
+            animation: flutuar 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes flutuar {
+            0% { transform: translateX(-50%) translateY(0); }
+            100% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        #backButton {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 20;
+        }
+
+        #backButton:hover {
+            background-color: #2980b9;
+        }
+    </style>
+
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div id="caixaMensagem"></div>
+<button id="backButton" onclick="goBackToInventory()">Voltar ao Inventário</button>
+
+<img id="sacoUI" src="./assets/saco.png" draggable="false" />
+
+<a-scene
+    mindar-image="imageTargetSrc: ./assets/targets.mind; keepTracking: false;"
+    embedded
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: true"
+    color-space="sRGB"
+    renderer="colorManagement: true, physicallyCorrectLights"
+>
+    <a-assets>
+        <img id="conteudo" src="./assets/pngegg.png">
+    </a-assets>
+
+    <a-entity id="targetEntity" mindar-image-target="targetIndex: 0" visible="false">
+        <a-image
+            id="alvoInterrogacao"
+            src="./assets/caixa.png"
+            scale="0.5 0.5 0.5"
+            position="0 0 0"
+            visible="true"
+        ></a-image>
+
+        <a-image
+            id="conteudoImagem"
+            src="#conteudo"
+            scale="0.5 0.5 0.5"
+            position="0 0 0"
+            visible="false"
+        ></a-image>
+    </a-entity>
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+</a-scene>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Sua configuração Firebase (verifique se está correta)
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8r-bd57AfWKrL6LSzkAgELGB_pl45eC4",
+      authDomain: "ar-zerograus.firebaseapp.com",
+      projectId: "ar-zerograus",
+      storageBucket: "ar-zerograus.appspot.com",
+      messagingSenderId: "708966843494",
+      appId: "1:708966843494:web:d0f539435f1c8d7a84d9a7",
+      measurementId: "G-VDRPEVPPGL"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            console.log("Usuário logado:", user.uid, "Nome:", user.displayName || user.email);
+        } else {
+            window.location.href = "index.html";
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const sacoUI = document.getElementById("sacoUI");
+        const caixaMensagem = document.getElementById("caixaMensagem");
+        const targetEntity = document.getElementById("targetEntity");
+        const conteudoImagem = document.getElementById("conteudoImagem");
+        const alvo = document.querySelector("a-image#alvoInterrogacao");
+
+        let offsetX, offsetY;
+        let isDragging = false;
+        let itemCaptured = false;
+
+        const setSacoOriginalPos = () => {
+            sacoUI.style.left = "50%";
+            sacoUI.style.bottom = "30px";
+            sacoUI.style.top = "";
+            sacoUI.style.transform = "translateX(-50%)";
+        };
+
+        targetEntity.addEventListener("targetFound", () => {
+            if (!itemCaptured) {
+                sacoUI.style.display = "block";
+                alvo.setAttribute("visible", true);
+                caixaMensagem.textContent = "Arraste o saco até a caixa misteriosa!";
+                caixaMensagem.style.display = "block";
+                setSacoOriginalPos();
+            }
+        });
+
+        targetEntity.addEventListener("targetLost", () => {
+            sacoUI.style.display = "none";
+            alvo.setAttribute("visible", false);
+            caixaMensagem.style.display = "none";
+        });
+
+        function startDrag(e) {
+            if (itemCaptured) return;
+            isDragging = true;
+            const touch = e.touches ? e.touches[0] : e;
+            const rect = sacoUI.getBoundingClientRect();
+            offsetX = touch.clientX - rect.left;
+            offsetY = touch.clientY - rect.top;
+            sacoUI.style.cursor = "grabbing";
+            e.preventDefault();
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            const touch = e.touches ? e.touches[0] : e;
+            const x = touch.clientX - offsetX;
+            const y = touch.clientY - offsetY;
+            sacoUI.style.left = `${x}px`;
+            sacoUI.style.top = `${y}px`;
+            sacoUI.style.bottom = "auto";
+            sacoUI.style.transform = "translate(0, 0)";
+        }
+
+        function stopDrag(e) {
+            if (!isDragging || itemCaptured) return;
+            isDragging = false;
+            sacoUI.style.cursor = "grab";
+
+            const sacoRect = sacoUI.getBoundingClientRect();
+
+            const alvoWorldPos = new THREE.Vector3();
+            // Adicionado verificação para garantir que alvo.object3D existe
+            if (alvo && alvo.object3D) {
+                alvo.object3D.getWorldPosition(alvoWorldPos);
+            } else {
+                console.error("DEBUG: 'alvo' ou 'alvo.object3D' não encontrado/pronto.");
+                setSacoOriginalPos(); // Reseta a posição do saco
+                return; // Sai da função para evitar erros
+            }
+            
+            const sceneEl = document.querySelector("a-scene");
+            const camera = sceneEl ? sceneEl.camera : null;
+
+            if (!camera) {
+                console.error("DEBUG: Câmera da cena A-Frame não encontrada.");
+                setSacoOriginalPos(); // Reseta a posição do saco
+                return; // Sai da função
+            }
+
+            const screenPos = new THREE.Vector3().copy(alvoWorldPos).project(camera);
+            const alvoX = (screenPos.x * window.innerWidth) / 2 + window.innerWidth / 2;
+            const alvoY = -(screenPos.y * window.innerHeight) / 2 + window.innerHeight / 2;
+
+            const centerSacoX = sacoRect.left + sacoRect.width / 2;
+            const centerSacoY = sacoRect.top + sacoRect.height / 2;
+
+            const dx = centerSacoX - alvoX;
+            const dy = centerSacoY - alvoY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // --- MENSAGENS DE DEBUG NO CONSOLE ---
+            console.log("--- DEBUG STOP DRAG ---");
+            console.log("Coordenadas do Alvo (Tela - X, Y):", alvoX, alvoY);
+            console.log("Coordenadas Centro Saco (Tela - X, Y):", centerSacoX, centerSacoY);
+            console.log("Distância entre centros:", distance);
+            console.log("Raio de Colisão (Metade da Largura do Saco):", sacoRect.width / 2);
+            console.log("Houve Colisão (Distância < Raio):", distance < sacoRect.width / 2);
+            // --- FIM DAS MENSAGENS DE DEBUG ---
+
+            if (distance < sacoRect.width / 2) {
+                capturarItem();
+            }
+
+            setSacoOriginalPos();
+        }
+
+        async function capturarItem() {
+            if (itemCaptured || !currentUser) return;
+
+            itemCaptured = true;
+            caixaMensagem.textContent = "Item capturado!";
+            conteudoImagem.setAttribute("visible", true);
+            alvo.setAttribute("visible", false);
+            sacoUI.style.display = "none";
+
+            const userName = currentUser.displayName || currentUser.email;
+
+            const newItem = {
+                userId: currentUser.uid,
+                userName: userName,
+                name: "Zero Graus",
+                imageUrl: "./assets/pngegg.png",
+                timestamp: serverTimestamp() 
+            };
+
+            try {
+                await addDoc(collection(db, "inventories"), newItem);
+                console.log("Item salvo no Firestore!", newItem);
+            } catch (error) {
+                console.error("Erro ao salvar item no Firestore: ", error);
+                caixaMensagem.textContent = "Erro ao salvar item!";
+            }
+
+            setTimeout(() => {
+                caixaMensagem.style.display = "none";
+            }, 2000);
+        }
+
+        sacoUI.addEventListener("mousedown", startDrag);
+        sacoUI.addEventListener("touchstart", startDrag);
+        window.addEventListener("mousemove", drag);
+        window.addEventListener("touchmove", drag);
+        window.addEventListener("mouseup", stopDrag);
+        window.addEventListener("touchend", stopDrag);
+    });
+
+    window.goBackToInventory = function() {
+        window.location.href = "inventario.html";
+    }
+</script>
+
+</body>
+</html>
