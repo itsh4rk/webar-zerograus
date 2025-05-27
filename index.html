@@ -1,119 +1,265 @@
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login AR Project</title>
     <style>
-      #caixaFixa {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 300px;
-        height: 300px;
-        padding: 20px;
-        background-color: #006600;
-        color: white;
-        border-radius: 8px;
-        display: none;
-        z-index: 998;
-        text-align: center;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-      }
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-      #caixaFixa img {
-        width: 60px;
-        margin-bottom: 10px;
-      }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #2c3e50, #3498db);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
 
-      #caixaFixa video {
-        width: 100%;
-        height: auto;
-        margin-top: 10px;
-      }
+        .login-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
 
-      #botaoHtml {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 10px 20px;
-        font-size: 16px;
-        background-color: #00cc00;
-        border: none;
-        border-radius: 5px;
-        display: none;
-        cursor: pointer;
-        z-index: 999;
-      }
+        h2 {
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        /* Estilos para o campo de email */
+        input[type="email"] {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 6px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .google-btn {
+            background-color: #dd4b39;
+        }
+
+        .error {
+            color: red;
+            margin-top: 1rem;
+        }
+
+        /* Estilos para a mensagem de sucesso */
+        .success {
+            color: green;
+        }
+
+        .footer {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
     </style>
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  </head>
-  <body>
-
-    <!-- Caixa HTML fixa -->
-    <div id="caixaFixa">
-      <img id="imagemFlor" src="./assets/flor.png" alt="Flor" />
-      <video 
-        id="videoHtml" 
-        src="./assets/video.mp4" 
-        loop 
-        muted 
-        playsinline 
-        webkit-playsinline 
-        crossorigin="anonymous">
-      </video>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="email" id="email" placeholder="Email" required />
+            <input type="password" id="password" placeholder="Senha" required />
+            <button type="submit" id="loginButton">Entrar</button>
+        </form>
+        <button id="createAccountButton" onclick="window.location.href = 'registro.html'">Criar Conta</button>
+        <button id="googleBtn" class="google-btn">Entrar com Google</button>
+        <div class="error" id="errorMsg"></div>
+        <div class="footer">
+            © 2025 AR Project
+        </div>
     </div>
 
-    <!-- Botão HTML -->
-    <button id="botaoHtml">Abrir site</button>
+    <script type="module">
+        // !!! ESTES IMPORTS DEVEM ESTAR SEMPRE NO TOPO DO SEU BLOCO <script type="module"> !!!
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        // NOVO: Importar o GoogleAuthProvider e signInWithPopup
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        // NÃO COLOQUE NADA ALÉM DE IMPORTS OU COMENTÁRIOS DE LINHA AQUI EM CIMA
 
-    <!-- Cena AR -->
-    <a-scene
-      mindar-image="imageTargetSrc: ./assets/targets1.mind;"
-      color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-      embedded
-    >
-      <a-assets>
-        <!-- Não usamos mais o vídeo nem imagem aqui -->
-      </a-assets>
+        // O restante do seu código JS, incluindo o DOMContentLoaded, vem AQUI ABAIXO
+        document.addEventListener("DOMContentLoaded", () => {
+            // Sua configuração do Firebase (deve ser a mesma que você tem)
+            const firebaseConfig = {
+                apiKey: "AIzaSyD8r-bd57AfWKrL6LSzkAgELGB_pl45eC4",
+                authDomain: "ar-zerograus.firebaseapp.com",
+                projectId: "ar-zerograus",
+                storageBucket: "ar-zerograus.appspot.com",
+                messagingSenderId: "708966843494",
+                appId: "1:708966843494:web:d0f539435f1c8d7a84d9a7",
+                measurementId: "G-VDRPEVPPGL"
+            };
 
-      <a-entity id="target" mindar-image-target="targetIndex: 0"></a-entity>
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            // NOVO: Inicializa o provedor Google
+            const googleProvider = new GoogleAuthProvider();
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-    </a-scene>
+            // Referências aos elementos HTML
+            const emailInput = document.getElementById("email");
+            const passwordInput = document.getElementById("password");
+            const loginButton = document.getElementById("loginButton"); // Esta variável agora é declarada, mas não usada para o listener
+            const messageDisplay = document.getElementById("errorMsg"); 
+            const createAccountButton = document.getElementById("createAccountButton"); 
+            const loginForm = document.getElementById("loginForm"); // Referência ao formulário
+            // NOVO: Referência ao botão do Google
+            const googleBtn = document.getElementById("googleBtn");
 
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const caixaFixa = document.getElementById("caixaFixa");
-        const botaoHtml = document.getElementById("botaoHtml");
-        const videoHtml = document.getElementById("videoHtml");
-        const target = document.querySelector("#target");
+            // Função para exibir mensagens na tela (pode ser útil)
+            function showMessage(text, isError = true) {
+                messageDisplay.textContent = text;
+                messageDisplay.className = isError ? "error" : "error success"; 
+                if (messageDisplay.textContent) {
+                    messageDisplay.style.display = 'block';
+                } else {
+                    messageDisplay.style.display = 'none';
+                }
+            }
 
-        target.addEventListener("targetFound", () => {
-          caixaFixa.style.display = "flex";
-          botaoHtml.style.display = "block";
-          videoHtml.play().catch((e) => {
-            console.warn("Erro ao iniciar vídeo:", e);
-          });
-        });
+            // Lógica de verificação de login ao carregar a página
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    console.log("Usuário já logado:", user.uid);
+                    // IMPORTANTE: Se o usuário já está logado, redirecionar IMEDIATAMENTE
+                    window.location.href = "inventario.html"; 
+                }
+            });
 
-        target.addEventListener("targetLost", () => {
-          caixaFixa.style.display = "none";
-          botaoHtml.style.display = "none";
-          videoHtml.pause();
-          videoHtml.currentTime = 0;
-        });
+            // Event listener para o formulário de Login (email/senha)
+            loginForm.addEventListener("submit", async (event) => { 
+                event.preventDefault(); // Impede o envio padrão do formulário
 
-        botaoHtml.addEventListener("click", () => {
-          window.open("https://moncorvosoto.pt", "_blank");
-        });
-      });
+                const email = emailInput.value.trim();
+                const password = passwordInput.value.trim();
+
+                if (!email || !password) {
+                    showMessage("Por favor, preencha todos os campos.");
+                    return;
+                }
+                showMessage(""); // Esconder mensagem anterior
+
+                try {
+                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    console.log("Login bem-sucedido:", userCredential.user.uid);
+                    showMessage("Login bem-sucedido! Redirecionando...", false);
+                    
+                    // Redirecionar para a página principal (inventario.html) após um pequeno atraso
+                    setTimeout(() => {
+                        window.location.href = "inventario.html";
+                    }, 1500); 
+
+                } catch (error) {
+                    console.error("Erro no login:", error.code, error.message);
+                    let errorMessage = "Erro desconhecido. Tente novamente.";
+                    switch (error.code) {
+                        case 'auth/invalid-email':
+                            errorMessage = "Email inválido. Verifique o formato.";
+                            break;
+                        case 'auth/user-disabled':
+                            errorMessage = "Sua conta foi desativada.";
+                            break;
+                        case 'auth/user-not-found':
+                        case 'auth/wrong-password':
+                            errorMessage = "Email ou senha incorretos.";
+                            break;
+                        case 'auth/too-many-requests':
+                            errorMessage = "Muitas tentativas de login. Tente novamente mais tarde.";
+                            break;
+                        case 'auth/invalid-credential': // Adicionado para cobrir o erro que você viu antes
+                            errorMessage = "Email ou senha inválidos. Verifique suas credenciais.";
+                            break;
+                        default:
+                            errorMessage = `Erro: ${error.message}`;
+                            break;
+                    }
+                    showMessage(errorMessage);
+                }
+            });
+            
+            // NOVO: Event listener para o botão de Login com Google
+            if (googleBtn) {
+                googleBtn.addEventListener("click", async () => {
+                    showMessage(""); // Limpa mensagens anteriores
+                    try {
+                        const result = await signInWithPopup(auth, googleProvider);
+                        // User is signed in.
+                        const user = result.user;
+                        console.log("Login com Google bem-sucedido:", user.uid);
+                        showMessage("Login com Google bem-sucedido! Redirecionando...", false);
+
+                        // Redirecionar para a página principal (inventario.html) após um pequeno atraso
+                        setTimeout(() => {
+                            window.location.href = "inventario.html";
+                        }, 1500);
+
+                    } catch (error) {
+                        console.error("Erro no login com Google:", error.code, error.message);
+                        let errorMessage = "Erro desconhecido ao logar com Google. Tente novamente.";
+                        switch (error.code) {
+                            case 'auth/popup-closed-by-user':
+                                errorMessage = "Login com Google cancelado.";
+                                break;
+                            case 'auth/cancelled-popup-request':
+                                errorMessage = "Requisição de popup cancelada. Tente novamente.";
+                                break;
+                            case 'auth/unauthorized-domain':
+                                errorMessage = "Domínio não autorizado para login com Google. Verifique as configurações do Firebase.";
+                                break;
+                            case 'auth/account-exists-with-different-credential':
+                                errorMessage = "Já existe uma conta com este email usando outro método de login. Tente usar Email/Senha.";
+                                break;
+                            default:
+                                errorMessage = `Erro: ${error.message}`;
+                                break;
+                        }
+                        showMessage(errorMessage);
+                    }
+                });
+            }
+
+            // Lógica para o botão "Criar Conta"
+            if (createAccountButton) { 
+                createAccountButton.addEventListener("click", () => {
+                    window.location.href = "registro.html";
+                });
+            }
+        }); 
     </script>
-  </body>
+</body>
 </html>
-
